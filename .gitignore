@@ -1,6 +1,10 @@
 .DS_Store
 /.idea
-/venv
+venv/
 __pycache__/
 *.py[cod]
 fake.py
+__init__.py
+
+
+python/update_node_types/when_deleted_70729/azureNodeTypeCache.json

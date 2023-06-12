@@ -1,7 +1,6 @@
-## Update Node Types
+## Update Node Types when deleted
 
-Morpheus Python 3 script to check synced virtual images for new versions and update node types 
-which uses an older version of the same virtual image.
+Morpheus Python 3 script which provides interim workaround for 70729.
 
 This script works with synced virtual images which conform to the Azure shared compute 
 image gallery specification.
