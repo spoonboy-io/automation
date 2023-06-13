@@ -16,7 +16,7 @@ node workersFromClusters.js
 
 Data for a select input, dependent on cluster selected.
 
-```json
+```
 [
   { name: 'MKS 1-worker-1', value: 14 },
   { name: 'MKS 1-worker-3', value: 16 },
