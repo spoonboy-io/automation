@@ -48,7 +48,6 @@ for nt in nodeTypes:
         ## if no cache exists and we have nulls there's nothing to do, but log that the nulls have been found
         ## and that the node types will have to be manually updated
         if hasCacheVersion:
-
             ## lookup the node in the cached data
             for nc in cacheNodeTypes:
                 if nc["id"] == nt["id"]:
