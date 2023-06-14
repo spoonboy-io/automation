@@ -5,7 +5,7 @@ E.g. Show only linux instances, assuming "lin" is applied in the name via a poli
 
 ### Why?
 
-[Discuss Link](https://discuss.morpheusdata.com/t/option-lists-rest-apis-pass-dynamic-parameter-in-source-url/1186)
+[Discuss Link](https://discuss.morpheusdata.com/t/option-lists-morpheus-api/1187)
 
 ### Run/test locally
 
