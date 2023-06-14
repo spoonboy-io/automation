@@ -12,7 +12,7 @@ Extracts workers of a Morpheus cluster from the `api/clusters` API response (all
 node workersFromClusters.js
 ```
 
-### Sample reponse
+### Sample response
 
 Data for a select input, dependent on cluster selected.
 
