@@ -1,10 +1,17 @@
 import requests
 from os.path import exists
 import json
+import urllib3
+
+## disable insecure warning
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 ## remove this we fake the morpheus dict in development
 import fake
 morpheus = fake.morpheus
+
+## test mode (will not update Morpheus, but will output the payloads that would be sent
+testMode = True
 
 ## config
 host = morpheus["morpheus"]["applianceHost"]
@@ -18,6 +25,12 @@ cacheFile = "azureNodeTypeCache.json" ## dev
 ##cacheFile = "/tmp/azureNodeTypeCache.json" ## morpheus
 hasCacheVersion = False
 cacheNodeTypes = []
+
+## there are some system node types which are not associated with a virtual image
+## whether this is also an effect of the Azure sync issue I don't kmow but can't know what to link them to
+## this script requires we build a cache, and for that we need no unlinked node types, at least once
+## so this array allows us to maintain a list of node types (by id) which we can ignore if they are null
+excludeNodeTypeList = [5, 333]
 
 getImages = "https://%s/api/virtual-images?max=1000&filterType=Synced&imageType=vhd" % (host)
 getNodeTypes = "https://%s/api/library/container-types?max=2000&provisionType=azure&sort=id&direction=asc" % (host)
@@ -41,42 +54,53 @@ nodeTypes = res.json()["containerTypes"]
 ## nocache, if we get nulls we won't cache the
 writeCache = True
 for nt in nodeTypes:
-    if nt["virtualImage"] is None:
-        ## we have orphans, we don't want to cache the response
-        writeCache = False
+    if nt["id"] not in excludeNodeTypeList:
+        if nt["virtualImage"] is None:
+            ## we have orphans, we don't want to cache the response
+            writeCache = False
 
-        ## if no cache exists and we have nulls there's nothing to do, but log that the nulls have been found
-        ## and that the node types will have to be manually updated
-        if hasCacheVersion:
-            ## lookup the node in the cached data
-            for nc in cacheNodeTypes:
-                if nc["id"] == nt["id"]:
-                    ## get the virtual image that was attached
-                    vi = nt["virtualImage"]
-                    if vi is not None:
-                        ## get then update the node type with virtual image
-                        apiNodeType = "https://%s/api/library/container-types/%s" % (host, nt["id"])
-                        res = requests.get(apiNodeType, headers=headers, verify=False)
-                        nodeType = res.json()
-
-                        ## update the info
-                        nodeType["containerType"]["virtualImage"]["id"] = vi["id"]
-                        nodeType["containerType"]["virtualImage"]["name"] = vi["name"]
-
-                        putData = json.dumps(nodeType)
-
-                        ## make the put request with data
-                        res = requests.put(apiNodeType, data=putData, headers=headers, verify=False)
-                        msg = ""
-                        if res.status_code == 200:
-                            msg = "Response: %s, Node type: %s (id: %s) was relinked to virtual image; %s (id: %s)" % (res.status_code, nt["name"], nt["id"], vi["name"], vi["id"])
-                        else:
-                            msg = "ErrResponse: %s, Node type: %s (id: %s) virtual image will need to be added manually" % (res.status_code, nt["name"], nt["id"])
+            ## if no cache exists and we have nulls there's nothing to do, but log that the nulls have been found
+            ## and that the node types will have to be manually updated
+            if hasCacheVersion:
+                ## lookup the node in the cached data
+                for nc in cacheNodeTypes:
+                    if nc["id"] == nt["id"]:
+                        msg = "found cached version of '%s' node type with missing image" % nc["name"]
                         print(msg)
-        else:
-            ## nothing to be done output some information about the node type
-            msg = "Node type: %s (id: %s) is disconnected from a virtual image, there is no cache so a virtual image will need to be added manually" % (nt["name"], nt["id"])
-            print(msg)
+                        ## get the virtual image that was attached
+                        vi = nc["virtualImage"]
+                        if vi is not None:
+                            ## get then update the node type with virtual image
+                            apiNodeType = "https://%s/api/library/container-types/%s" % (host, nt["id"])
+                            res = requests.get(apiNodeType, headers=headers, verify=False)
+                            nodeType = res.json()
+
+                            ## update the info
+                            updatedVirtualImage = {
+                                "id": vi["id"],
+                                "name": vi["name"]
+                            }
+
+                            nodeType["containerType"]["virtualImage"] = updatedVirtualImage
+
+                            putData = json.dumps(nodeType)
+
+                            ## make the put request with data (if not dev)
+                            if not testMode:
+                                res = requests.put(apiNodeType, data=putData, headers=headers, verify=False)
+                                msg = ""
+                                if res.status_code == 200:
+                                    msg = "Response: %s, Node type: %s (id: %s) was relinked to virtual image; %s (id: %s)" % (res.status_code, nt["name"], nt["id"], vi["name"], vi["id"])
+                                else:
+                                    msg = "ErrResponse: %s, Node type: %s (id: %s) virtual image will need to be added manually" % (res.status_code, nt["name"], nt["id"])
+                                print(msg)
+                            else:
+                                print("test mode: payload to update node with new virtual image:")
+                                print(nodeType)
+            else:
+                ## nothing to be done output some information about the node type
+                msg = "Node type: %s (id: %s) is disconnected from a virtual image, there is no cache so a virtual image will need to be added manually" % (nt["name"], nt["id"])
+                print(msg)
 
 ## write or update cache conditionally
 if writeCache:
