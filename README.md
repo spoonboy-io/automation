@@ -4,6 +4,10 @@ This repository contains a collection of automation scripts for use with Morpheu
 
 ### Contents
 
+### SQL Database Queries
+
+- [Get Virtual Image of Instance](database_queries/get_virtual_image_of_instance/getVirtualImageOfInstance.sql)
+
 #### Python
 
 - [Update Node Types](/python/update_node_types)
