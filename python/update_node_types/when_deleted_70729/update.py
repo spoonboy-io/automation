@@ -10,12 +10,21 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import fake
 morpheus = fake.morpheus
 
+## additional logging
+def debugP(message):
+    if debugMode:
+        print(message)
+
 ## test mode (will not update Morpheus, but will output the payloads that would be sent
 testMode = True
+
+## debug mode will provide additional logging when set to True
+debugMode = True
 
 ## config
 host = morpheus["morpheus"]["applianceHost"]
 token = "Bearer %s" %(morpheus["morpheus"]["apiAccessToken"])
+
 headers = {
     "accept": "application/json",
     "authorization": token
@@ -24,6 +33,7 @@ headers = {
 cacheFile = "azureNodeTypeCache.json" ## dev
 ##cacheFile = "/tmp/azureNodeTypeCache.json" ## morpheus
 hasCacheVersion = False
+updatesMade = False
 cacheNodeTypes = []
 
 ## there are some system node types which are not associated with a virtual image
@@ -53,6 +63,15 @@ nodeTypes = res.json()["containerTypes"]
 ## iterate nodes for nodes with null virtual image
 ## nocache, if we get nulls we won't cache the
 writeCache = True
+
+## inform of status
+if testMode:
+    print("Script is executing in test mode, no updates will be made")
+
+if debugMode:
+    print("Script is executing in debug mode, output will be verbose")
+
+print("Checking node types")
 for nt in nodeTypes:
     if nt["id"] not in excludeNodeTypeList:
         if nt["virtualImage"] is None:
@@ -65,8 +84,9 @@ for nt in nodeTypes:
                 ## lookup the node in the cached data
                 for nc in cacheNodeTypes:
                     if nc["id"] == nt["id"]:
-                        msg = "found cached version of '%s' node type with missing image" % nc["name"]
+                        msg = "Found cached version of '%s' node type with missing image" % nc["name"]
                         print(msg)
+
                         ## get the virtual image that was attached
                         vi = nc["virtualImage"]
                         if vi is not None:
@@ -76,36 +96,56 @@ for nt in nodeTypes:
                             nodeType = res.json()
 
                             ## update the info
-                            updatedVirtualImage = {
-                                "id": vi["id"],
-                                "name": vi["name"]
-                            }
+                            newImageFound = False
+                            for virtualImage in virtualImages:
+                                if vi["name"] == virtualImage["name"]:
+                                    updatedVirtualImage = {
+                                        "id": virtualImage["id"],
+                                        "name": virtualImage["name"]
+                                    }
 
-                            nodeType["containerType"]["virtualImage"] = updatedVirtualImage
+                                    nodeType["containerType"]["virtualImage"] = updatedVirtualImage
 
-                            putData = json.dumps(nodeType)
+                                    putData = json.dumps(nodeType)
 
-                            ## make the put request with data (if not dev)
-                            if not testMode:
-                                res = requests.put(apiNodeType, data=putData, headers=headers, verify=False)
-                                msg = ""
-                                if res.status_code == 200:
-                                    msg = "Response: %s, Node type: %s (id: %s) was relinked to virtual image; %s (id: %s)" % (res.status_code, nt["name"], nt["id"], vi["name"], vi["id"])
-                                else:
-                                    msg = "ErrResponse: %s, Node type: %s (id: %s) virtual image will need to be added manually" % (res.status_code, nt["name"], nt["id"])
-                                print(msg)
-                            else:
-                                print("test mode: payload to update node with new virtual image:")
-                                print(nodeType)
+                                    ## make the put request with data (if not dev)
+                                    if not testMode:
+                                        res = requests.put(apiNodeType, data=putData, headers=headers, verify=False)
+                                        msg = ""
+                                        if res.status_code == 200:
+                                            msg = "Response: %s, Node type: %s (id: %s) was relinked to virtual image; %s (id: %s)" % (res.status_code, nt["name"], nt["id"], vi["name"], vi["id"])
+                                        else:
+                                            msg = "ErrResponse: %s, Node type: %s (id: %s) virtual image will need to be added manually" % (res.status_code, nt["name"], nt["id"])
+                                            print(msg)
+                                    else:
+                                        print("Test mode: payload to update node with new virtual image:")
+                                        print(nodeType)
+
+                                    newImageFound = True
+                                    updatesMade = True
+
+                            if not newImageFound:
+                                msg = "Could not identify new image for '%s' based on virtual image name, it remains null in node type" % nt["name"]
             else:
                 ## nothing to be done output some information about the node type
                 msg = "Node type: %s (id: %s) is disconnected from a virtual image, there is no cache so a virtual image will need to be added manually" % (nt["name"], nt["id"])
                 print(msg)
+        else:
+            msg = "Node type: %s (id: %s) has a virtual image attached, skipping.." % (nt["name"], nt["id"])
+            debugP(msg)
+    else:
+        msg = "Node type %s (id: %s) in excluded list, skipped.." % (nt["name"], nt["id"])
+        print(msg)
+
+if not updatesMade:
+    print("There where no updates which could be made by the script")
 
 ## write or update cache conditionally
 if writeCache:
     f = open(cacheFile, "w")
     f.write(json.dumps(nodeTypes))
     f.close()
-    msg = "node types cached for tracking in file: %s" % cacheFile
+    msg = "Node types cached for tracking in file: %s" % cacheFile
     print(msg)
+
+print("Script execution completed")
