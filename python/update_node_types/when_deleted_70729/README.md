@@ -1,9 +1,9 @@
 ## Update Node Types when deleted
 
+*Always backup your database before implementing any automation and test in a non-production environment*
+
 Morpheus Python 3 script which provides interim workaround for 70729.
 
-This script works with synced virtual images which conform to the Azure shared compute 
-image gallery specification.
 
 ### Usage
 
@@ -19,6 +19,8 @@ The `testMode=True` (line 19). This script can be run in this mode to see what u
 be made, without them being made. When happy script is applying the expected updates set this to `False`.
 
 There is `debugMode=True` (line 22) which provides more verbose output about skipped images.
+
+Amend line 33 to a location which is writeable by Morpheus (NFS on a HA appliance)
 
 The `excludeNodeTypeList = [5, 333]` (line 43). Use this array to ignore any system node types with null virtual images
 If nulls are detected and they are not in this array, the cache will not be built.
