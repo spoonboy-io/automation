@@ -15,11 +15,14 @@ stored in the cache.
 
 ### Important 
 
-The `testMode=True` (line 14). This script can be run in this mode to see what updates will
+The `testMode=True` (line 19). This script can be run in this mode to see what updates will
 be made, without them being made. When happy script is applying the expected updates set this to `False`.
 
-The `excludeNodeTypeList = [5, 333]` (line 33). Use this array to ignore any system node types with null virtual images
+There is `debugMode=True` (line 22) which provides more verbose output about skipped images.
+
+The `excludeNodeTypeList = [5, 333]` (line 43). Use this array to ignore any system node types with null virtual images
 If nulls are detected and they are not in this array, the cache will not be built.
 
-Script reattaches lost virtual image to the node type by maintaining state
-(previous good response) in a file cache.
+Script reattaches virtual image to the node type by maintaining state
+(previous good response) in a file cache. The name of the image found in the cached data is used to identify the new synced image
+in the virtual images api call and attach that to the node type.
