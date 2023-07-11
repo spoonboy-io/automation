@@ -56,9 +56,11 @@ if exists(cacheFile):
 ## get the virtual image and node data
 res = requests.get(getImages, headers=headers, verify=False)
 virtualImages = res.json()["virtualImages"]
+debugP("%s synced virtual images found" % len(virtualImages))
 
 res = requests.get(getNodeTypes, headers=headers, verify=False)
 nodeTypes = res.json()["containerTypes"]
+debugP("%s node types found" % len(nodeTypes))
 
 ## iterate nodes for nodes with null virtual image
 ## nocache, if we get nulls we won't cache the
@@ -73,6 +75,7 @@ if debugMode:
 
 print("Checking node types")
 for nt in nodeTypes:
+    debugP("Checking node type %s (id: %s)" % (nt["name"], nt["id"]))
     if nt["id"] not in excludeNodeTypeList:
         if nt["virtualImage"] is None:
             ## we have orphans, we don't want to cache the response
