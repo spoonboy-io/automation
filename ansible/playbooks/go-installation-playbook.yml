@@ -3,7 +3,7 @@
 - name: Install Go version
   hosts: all
   vars:
-     - version: {{ morpheus['customOptions']['goVersion'] }}
+     - version: "{{ morpheus['customOptions']['goVersion'] }}"
   tasks:
     - name: Download go tar file
       command: wget https://go.dev/dl/go{{version}}.linux-amd64.tar.gz
