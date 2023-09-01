@@ -20,6 +20,7 @@
       shell: rm -rf go{{version}}.linux-amd64.tar.gz*
 
     - name: Add go binary path to /etc/.profile
+      become: true
       lineinfile:
         path: /etc/profile
         line: 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin'
@@ -27,4 +28,5 @@
         state: present
 
     - name: Source updated profile and test go version
+      become: true
       shell: . /etc/profile && go version
