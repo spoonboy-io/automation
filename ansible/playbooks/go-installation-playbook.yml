@@ -19,12 +19,12 @@
     - name: Delete downloaded tar file
       shell: rm -rf go{{version}}.linux-amd64.tar.gz*
 
-    - name: Add go binary path to ~/.profile
+    - name: Add go binary path to /etc/.profile
       lineinfile:
-        path: ~/.profile
+        path: /etc/profile
         line: 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin'
         create: true
         state: present
 
     - name: Source updated profile and test go version
-      shell: . ~/.profile && go version
+      shell: . /etc/profile && go version
